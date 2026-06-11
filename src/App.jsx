@@ -487,13 +487,15 @@ function App() {
     if (currentIndex + 1 < questions.length) setTimeout(() => setCurrentIndex((prev) => prev + 1), 250);
   };
 
-  const finishQuiz = useCallback((answersOverride) => {
+    const finishQuiz = useCallback((answersOverride) => {
     const answers = answersOverride || userAnswersRef.current;
     let fc = 0, fi = 0;
+    
     questions.forEach((q, idx) => {
       const rec = answers[idx];
       if (rec?.selected) { rec.isCorrect ? fc++ : fi++; }
     });
+    
     const fs = (fc * marksCorrect - fi * marksNegative).toFixed(2);
     const acc = questions.length > 0 ? ((fc / questions.length) * 100).toFixed(0) : 0;
     setStats({ correct: fc, incorrect: fi });
@@ -501,10 +503,35 @@ function App() {
     const sLog = selectedSubjects[0];
     const wIds = questions.map((q, idx) => answers[idx]).filter((a) => a && !a.isCorrect && a.selected).map((a) => a.question.id);
 
+    // Calculate time taken (Total allotted time minus time left)
+    // If it's not a timed test (timeLeft is 0 from the start), default to 0
+    const totalTimeAllotted = examMode === "test" ? questions.length * 120 : 0;
+    const timeTaken = examMode === "test" ? totalTimeAllotted - timeLeft : 0;
+
+    // Determine the type of test for the history logs
+    let testTypeLog = "Mixed Practice";
+    if (examMode === "test") {
+      if (examFilterMode === "strict") testTypeLog = "Full Test";
+      else if (selectedChapters.length > 0) testTypeLog = "Chapter Test";
+      else testTypeLog = "Subject Test";
+    }
+
     Promise.all([
+      // --- THIS IS THE UPDATED SAVE-RESULT PAYLOAD ---
       fetch(`${API_URL}/save-result`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: currentUser.id, subject_id: sLog, score: fs, accuracy: acc }),
+        body: JSON.stringify({ 
+          user_id: currentUser.id, 
+          subject_id: sLog || null, 
+          chapter_id: selectedChapters[0] || null,
+          exam_name: selectedExamName || null,
+          test_type: testTypeLog,
+          score: fs, 
+          accuracy: acc,
+          correct_count: fc,
+          wrong_count: fi,
+          time_taken: timeTaken
+        }),
       }),
       wIds.length > 0
         ? fetch(`${API_URL}/save-incorrect`, {
@@ -515,7 +542,10 @@ function App() {
     ]).catch(console.error);
 
     setQuizStatus("results");
-  }, [questions, marksCorrect, marksNegative, selectedSubjects, currentUser]);
+    
+  // Make sure to update the dependency array at the end of the useCallback so it has access to the new state variables!
+  }, [questions, marksCorrect, marksNegative, selectedSubjects, selectedChapters, selectedExamName, examFilterMode, examMode, timeLeft, currentUser]);
+
 
   const handleEarlySubmit = () => {
     const unanswered = questions.length - Object.keys(userAnswersRef.current).filter((k) => userAnswersRef.current[k]?.selected).length;
