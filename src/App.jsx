@@ -18,6 +18,8 @@ import Results from "./pages/Results";
 import Analytics from "./pages/Analytics";
 import MistakeReview from "./pages/MistakeReview";
 import AdminPanel from "./pages/AdminPanel";
+import TestHistory from "./pages/TestHistory";
+
 
 function App() {
   const navigate = useNavigate();
@@ -57,7 +59,7 @@ function App() {
     const path = location.pathname;
     if (path === "/dashboard") setQuizStatusState("home");
     else if (path === "/add-exam") setQuizStatusState("examSelection");
-    else if (path === "/analytics") setQuizStatusState("dashboard");
+    else if (path === "/history") setQuizStatusState("dashboard");
     else if (path === "/review") setQuizStatusState("reviewErrors");
     else if (path === "/admin") setQuizStatusState("admin");
     // We explicitly ignore "/practice" here so local state handles the quiz flow!
@@ -705,13 +707,21 @@ function App() {
             />
           } />
 
-          <Route path="/analytics" element={
-            <Analytics
-              handleClearHistory={handleClearHistory} peerCompareSubject={peerCompareSubject}
-              setPeerCompareSubject={setPeerCompareSubject} fetchPeerStats={fetchPeerStats}
-              structure={structure} peerStats={peerStats} pastResults={pastResults} missedQuestions={missedQuestions}
+                   {/* THE LIST OF PAST TESTS */}
+          <Route path="/history" element={
+            <TestHistory
+              pastResults={pastResults}
+              handleClearHistory={handleClearHistory}
             />
           } />
+
+
+          <Route path="/analytics/:testId" element={
+            <Analytics
+              pastResults={pastResults}
+            />
+          } />
+
 
           <Route path="/review" element={
             <MistakeReview
