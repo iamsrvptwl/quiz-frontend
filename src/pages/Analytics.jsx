@@ -1,3 +1,5 @@
+// src/pages/Analytics.jsx
+import React from "react";
 import Latex from "react-latex-next";
 import {
   Radar,
@@ -18,8 +20,67 @@ import {
   PieChart,
   Pie,
   Cell,
+  ReferenceDot,
 } from "recharts";
 import { theme, styles, CHART_COLORS } from "../theme";
+
+// --- MOCK DATA FOR THE NEW UI (Replace with real backend data later) ---
+const marksDistributionData = [
+  { marks: -20, students: 0 },
+  { marks: -12, students: 160 },
+  { marks: -4, students: 70 },
+  { marks: 4, students: 80 },
+  { marks: 12, students: 130 },
+  { marks: 20, students: 140 },
+  { marks: 28, students: 170 },
+  { marks: 37.5, students: 260, label: "Average: 37.56" },
+  { marks: 45, students: 480, label: "You are here: 45 | Median: 45.5" },
+  { marks: 52, students: 700 },
+];
+
+const topRankers = [
+  { name: "Rohit Siroha", score: "60/60", avatarBg: "#06B6D4" },
+  { name: "ANISH KUMAR", score: "60/60", avatarBg: "#06B6D4" },
+  { name: "Prabhash Kumar", score: "60/60", avatarBg: "#06B6D4" },
+  { name: "Deeksha Tripathi", score: "60/60", avatarBg: "#06B6D4" },
+  { name: "Naitik", score: "60/60", avatarBg: "#3B82F6" },
+];
+
+// Helper component for the colored table cells
+const ColorBarCell = ({ value, sub, percent, color }) => (
+  <td style={{ ...styles.td, position: "relative", minWidth: "80px" }}>
+    <div
+      style={{
+        position: "absolute",
+        top: "10%",
+        bottom: "10%",
+        right: "10px",
+        width: "4px",
+        backgroundColor: color,
+        borderRadius: "4px",
+      }}
+    />
+    <div
+      style={{
+        position: "absolute",
+        top: 0,
+        bottom: 0,
+        left: 0,
+        width: `${percent}%`,
+        backgroundColor: color,
+        opacity: 0.15,
+      }}
+    />
+    <span style={{ position: "relative", zIndex: 1, fontWeight: "bold", fontSize: "15px" }}>
+      {value}
+    </span>
+    {sub && (
+      <span style={{ position: "relative", zIndex: 1, fontSize: "11px", color: theme.textMuted, marginLeft: "4px" }}>
+        {sub}
+      </span>
+    )}
+  </td>
+);
 
 export default function Analytics({
   handleClearHistory,
@@ -31,6 +92,8 @@ export default function Analytics({
   pastResults,
   missedQuestions,
 }) {
+  const latestTest = pastResults.length > 0 ? pastResults[0] : null;
+
   return (
     <div>
       <div
@@ -60,7 +123,152 @@ export default function Analytics({
         </button>
       </div>
 
-      {/* NEW PEER COMPARISON WIDGET */}
+      {/* ─── NEW TEST ANALYSIS WIDGET (Based on UI Mockup) ─── */}
+      <div style={{ marginBottom: "40px" }}>
+        {/* Top Badges */}
+        <div
+          style={{
+            ...styles.card,
+            display: "flex",
+            flexWrap: "wrap",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "20px",
+            gap: "15px",
+            marginBottom: "20px",
+          }}
+        >
+          {[
+            { icon: "🏅", label: "Rank", value: "990", sub: "/ 2257", color: "#EF4444" },
+            { icon: "🏆", label: "Score", value: latestTest?.score || "45", sub: "/ 60", color: "#8B5CF6" },
+            { icon: "📝", label: "Attempted", value: "19", sub: "/ 20", color: "#06B6D4" },
+            { icon: "🎯", label: "Accuracy", value: latestTest?.accuracy ? `${latestTest.accuracy}%` : "84.21%", sub: "", color: "#10B981" },
+            { icon: "👥", label: "Percentile", value: "56.18%", sub: "", color: "#6366F1" },
+          ].map((stat, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: "15px" }}>
+              <div
+                style={{
+                  width: "45px",
+                  height: "45px",
+                  borderRadius: "50%",
+                  backgroundColor: stat.color,
+                  color: "white",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "20px",
+                }}
+              >
+                {stat.icon}
+              </div>
+              <div>
+                <div style={{ fontSize: "18px", fontWeight: "bold", color: theme.textMain }}>
+                  {stat.value} <span style={{ fontSize: "12px", color: theme.textMuted, fontWeight: "normal" }}>{stat.sub}</span>
+                </div>
+                <div style={{ fontSize: "12px", color: theme.textMuted, fontWeight: "600" }}>{stat.label}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "24px" }}>
+          <div style={{ flex: "2 1 600px", display: "flex", flexDirection: "column", gap: "24px" }}>
+            
+            {/* Comparison Table */}
+            <div style={{ ...styles.card, padding: 0, overflow: "hidden", marginBottom: 0 }}>
+              <div style={{ padding: "15px 20px", borderBottom: "1px solid " + theme.border }}>
+                <h3 style={{ margin: 0, fontSize: "16px" }}>Compare with topper</h3>
+              </div>
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ ...styles.table, borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr>
+                      <th style={{ ...styles.th, backgroundColor: "white" }}></th>
+                      <th style={{ ...styles.th, backgroundColor: "white" }}>Score</th>
+                      <th style={{ ...styles.th, backgroundColor: "white" }}>Accuracy</th>
+                      <th style={{ ...styles.th, backgroundColor: "white" }}>Correct</th>
+                      <th style={{ ...styles.th, backgroundColor: "white" }}>Wrong</th>
+                      <th style={{ ...styles.th, backgroundColor: "white" }}>Time</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td style={{ ...styles.td, fontWeight: "bold" }}>You</td>
+                      <ColorBarCell value={latestTest?.score || "45"} sub="/ 60" percent={75} color="#C084FC" />
+                      <ColorBarCell value={latestTest?.accuracy ? `${latestTest.accuracy}%` : "84.21%"} sub="" percent={84} color="#4ADE80" />
+                      <ColorBarCell value="16" sub="/ 20" percent={80} color="#4ADE80" />
+                      <ColorBarCell value="3" sub="/ 20" percent={15} color="#F87171" />
+                      <ColorBarCell value="08:14" sub="/ 25mins" percent={33} color="#FACC15" />
+                    </tr>
+                    <tr>
+                      <td style={{ ...styles.td, fontWeight: "bold" }}>Topper</td>
+                      <ColorBarCell value="60" sub="/ 60" percent={100} color="#C084FC" />
+                      <ColorBarCell value="100%" sub="" percent={100} color="#4ADE80" />
+                      <ColorBarCell value="20" sub="/ 20" percent={100} color="#4ADE80" />
+                      <ColorBarCell value="0" sub="/ 20" percent={0} color="#F87171" />
+                      <ColorBarCell value="16:18" sub="/ 25mins" percent={65} color="#FACC15" />
+                    </tr>
+                    <tr>
+                      <td style={{ ...styles.td, fontWeight: "bold" }}>Avg</td>
+                      <ColorBarCell value="37.54" sub="/ 60" percent={62} color="#C084FC" />
+                      <ColorBarCell value="79.01%" sub="" percent={79} color="#4ADE80" />
+                      <ColorBarCell value="14" sub="/ 20" percent={70} color="#4ADE80" />
+                      <ColorBarCell value="4" sub="/ 20" percent={20} color="#F87171" />
+                      <ColorBarCell value="12:20" sub="/ 25mins" percent={50} color="#FACC15" />
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Marks Distribution Chart */}
+            <div style={{ ...styles.card, marginBottom: 0 }}>
+              <h3 style={{ margin: "0 0 20px 0", fontSize: "16px" }}>Marks Distribution</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={marksDistributionData} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                  <XAxis dataKey="marks" type="number" tick={{ fontSize: 12, fill: theme.textMuted }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 12, fill: theme.textMuted }} axisLine={false} tickLine={false} label={{ value: "Number of students", angle: -90, position: "insideLeft", fontSize: 12, fill: theme.textMuted }} />
+                  <RechartsTooltip contentStyle={{ borderRadius: "8px", border: "none", boxShadow: theme.shadow }} />
+                  <Line type="monotone" dataKey="students" stroke="#06B6D4" strokeWidth={3} dot={{ r: 5, fill: "#06B6D4", strokeWidth: 2, stroke: "white" }} activeDot={{ r: 8 }} />
+                  {marksDistributionData.filter(d => d.label).map((point, i) => (
+                    <ReferenceDot key={i} x={point.marks} y={point.students} r={6} fill="#06B6D4" stroke="none">
+                      <svg x={point.marks - 50} y={point.students - 25} style={{ overflow: "visible" }}>
+                        <text fontSize="11" fill={theme.textMain} fontWeight="bold">{point.label}</text>
+                      </svg>
+                    </ReferenceDot>
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Top Rankers Sidebar */}
+          <div style={{ ...styles.card, flex: "1 1 250px", marginBottom: 0, padding: 0, overflow: "hidden" }}>
+            <div style={{ padding: "15px 20px", borderBottom: "1px solid " + theme.border }}>
+              <h3 style={{ margin: 0, fontSize: "16px" }}>Top Rankers</h3>
+            </div>
+            <div style={{ padding: "10px" }}>
+              {topRankers.map((ranker, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: "15px", padding: "12px 10px", borderBottom: i !== topRankers.length - 1 ? "1px solid " + theme.border : "none" }}>
+                  <span style={{ fontWeight: "bold", color: theme.textMuted, width: "20px" }}>{i + 1}.</span>
+                  <div style={{ width: "35px", height: "35px", borderRadius: "50%", backgroundColor: ranker.avatarBg, color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px" }}>
+                    👤
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: "bold", fontSize: "14px" }}>{ranker.name}</div>
+                    <div style={{ fontSize: "12px", color: theme.textMuted }}>{ranker.score}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <hr style={{ border: 0, borderTop: "2px dashed " + theme.border, margin: "40px 0" }} />
+
+      {/* ─── GLOBAL PEER COMPARISON WIDGET ─── */}
       <div
         style={{
           ...styles.card,
@@ -70,7 +278,7 @@ export default function Analytics({
         }}
       >
         <h3 style={{ margin: "0 0 15px 0", color: theme.primary }}>
-          🌍 Global Peer Comparison
+          🌍 Global Peer Comparison (All Exams)
         </h3>
         <div
           style={{
@@ -188,6 +396,7 @@ export default function Analytics({
         </div>
       </div>
 
+      {/* ─── HISTORICAL DATA & TRENDS ─── */}
       {(() => {
         if (pastResults.length === 0)
           return (
@@ -198,7 +407,7 @@ export default function Analytics({
                 padding: "40px",
               }}
             >
-              Take your first timed exam to generate analytics!
+              Take your first timed exam to generate historical analytics!
             </div>
           );
         const totalExams = pastResults.length;
