@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import * as math from "mathjs";
+import * as ReactIs from 'react-is';
 
 // --- IMPORTS: Constants & Components ---
 import { API_URL, theme, styles } from "./theme";
