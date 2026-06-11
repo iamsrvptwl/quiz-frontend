@@ -105,7 +105,7 @@ export default function Navbar({
           ⚠️ Review Errors
         </button>
         <button
-          onClick={() => setQuizStatus("dashboard")}
+          onClick={() => setQuizStatus("history")}
           style={{
             ...styles.button,
             ...styles.btnPrimary,
