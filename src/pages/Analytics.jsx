@@ -32,19 +32,31 @@ export default function Analytics({ pastResults }) {
     isLoading: true
   });
 
-  useEffect(() => {
-    // TODO: In the future, you will fetch the real detailed data here!
-    // Example: fetch(`/api/test-analytics/${testId}`).then(...)
-    
-    // For now, we simulate a fast load with empty/placeholder data
-    setDetailedStats({
-      marksDistributionData: [], 
-      topRankers: [], 
-      currentRank: "N/A", totalStudents: "N/A", percentile: "N/A",
-      topperStats: null, averageStats: null,
-      isLoading: false
-    });
-  }, [testId]);
+  
+useEffect(() => {
+    // If the data is missing, we don't fetch
+    if (!testId || !testInfo) return; 
+
+    // Fetch the real analytics from the backend
+    fetch(`http://localhost:3000/test-analytics/${testId}`)
+      .then(res => res.json())
+      .then(data => {
+        setDetailedStats({
+          marksDistributionData: data.marksDistributionData || [],
+          topRankers: data.topRankers || [],
+          currentRank: data.currentRank || "N/A",
+          totalStudents: data.totalStudents || "N/A",
+          percentile: data.percentile || "N/A",
+          topperStats: data.topperStats || null,
+          averageStats: data.averageStats || null,
+          isLoading: false
+        });
+      })
+      .catch(err => {
+        console.error("Failed to fetch detailed analytics", err);
+        setDetailedStats(prev => ({ ...prev, isLoading: false }));
+      });
+  }, [testId, testInfo]);
 
   if (!testInfo) {
     return (

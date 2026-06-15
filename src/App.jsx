@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import * as math from "mathjs";
-import * as ReactIs from 'react-is';
 
 // --- IMPORTS: Constants & Components ---
 import { API_URL, theme, styles } from "./theme";
@@ -54,23 +53,27 @@ function App() {
     return (s === "active" || s === "results") && savedQuiz ? s : "home";
   });
 
+ 
+
   // Sync Browser URL with State
   useEffect(() => {
     const path = location.pathname;
     if (path === "/dashboard") setQuizStatusState("home");
     else if (path === "/add-exam") setQuizStatusState("examSelection");
-    else if (path === "/history") setQuizStatusState("dashboard");
+    else if (path === "/history") setQuizStatusState("history");
     else if (path === "/review") setQuizStatusState("reviewErrors");
     else if (path === "/admin") setQuizStatusState("admin");
     // We explicitly ignore "/practice" here so local state handles the quiz flow!
   }, [location.pathname]);
+
+
 
   // Intercept Navigation
   const setQuizStatus = (newStatus) => {
     setQuizStatusState(newStatus);
     if (newStatus === "home") navigate("/dashboard");
     else if (newStatus === "examSelection") navigate("/add-exam");
-    else if (newStatus === "dashboard") navigate("/analytics");
+    else if (newStatus === "dashboard") navigate("/history");
     else if (newStatus === "reviewErrors") navigate("/review");
     else if (newStatus === "admin") navigate("/admin");
     else navigate("/practice"); 

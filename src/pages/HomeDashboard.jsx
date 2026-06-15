@@ -1,3 +1,5 @@
+// src/pages/HomeDashboard.jsx
+import React from "react";
 import { theme, styles } from "../theme";
 
 export default function HomeDashboard({
@@ -12,19 +14,45 @@ export default function HomeDashboard({
   return (
     <div
       style={{
-        textAlign: "center",
         marginTop: "40px",
         maxWidth: "800px",
         margin: "40px auto 0",
       }}
     >
-      <h1 style={{ fontSize: "28px", margin: "0 0 10px 0" }}>My Dashboard</h1>
-      <p style={{ color: theme.textMuted, marginBottom: "30px" }}>
+      {/* HEADER WITH HISTORY BUTTON */}
+      <div 
+        style={{ 
+          display: "flex", 
+          justifyContent: "space-between", 
+          alignItems: "center", 
+          flexWrap: "wrap",
+          gap: "15px",
+          marginBottom: "10px" 
+        }}
+      >
+        <h1 style={{ fontSize: "28px", margin: 0 }}>My Dashboard</h1>
+        <button
+          onClick={() => setQuizStatus("dashboard")}
+          style={{
+            ...styles.button,
+            ...styles.btnSuccess, // Using green to make it pop
+            width: "auto",
+            padding: "10px 20px",
+            fontSize: "14px",
+            boxShadow: theme.shadow
+          }}
+        >
+          📊 View Test History
+        </button>
+      </div>
+
+      <p style={{ color: theme.textMuted, marginBottom: "30px", textAlign: "left" }}>
         Select an exam track to begin your practice session.
       </p>
 
+      {/* EXAM LISTING */}
       {optedExams.length === 0 ? (
-        <div style={{ ...styles.card, padding: "40px" }}>
+        <div style={{ ...styles.card, padding: "40px", textAlign: "center" }}>
           <h2 style={{ color: theme.textMuted, marginBottom: "20px" }}>
             No Exam Opted
           </h2>
@@ -45,13 +73,14 @@ export default function HomeDashboard({
           </button>
         </div>
       ) : (
-        <div>
+        <div style={{ textAlign: "center" }}>
           <div
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
               gap: "20px",
               marginBottom: "30px",
+              textAlign: "left"
             }}
           >
             {optedExams.map((exam, idx) => {

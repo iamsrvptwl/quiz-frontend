@@ -1,5 +1,5 @@
 // --- CONFIGURATION ---
-export const API_URL = 'https://quiz-backend-iota-gules.vercel.app';
+export const API_URL = 'http://localhost:3000';
 
 // --- DESIGN SYSTEM ---
 export const theme = {
