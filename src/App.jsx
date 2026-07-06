@@ -18,6 +18,7 @@ import Analytics from "./pages/Analytics";
 import MistakeReview from "./pages/MistakeReview";
 import AdminPanel from "./pages/AdminPanel";
 import TestHistory from "./pages/TestHistory";
+import SavedSessions from "./pages/SavedSessions";
 
 
 function App() {
@@ -50,8 +51,29 @@ function App() {
 
   const [quizStatusState, setQuizStatusState] = useState(() => {
     const s = sessionStorage.getItem("quiz_status");
-    return (s === "active" || s === "results") && savedQuiz ? s : "home";
+    // 1. Restore active/results state if quiz data exists
+    if ((s === "active" || s === "results") && savedQuiz) return s;
+    // 2. Restore mode selection or setup screens safely on page refresh
+    if (s === "modeSelection" || s === "setup") return s;
+    // 3. Default fallback
+    return "home";
   });
+
+  const [savedSessions, setSavedSessions] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`saved_quizzes_${currentUser?.id || "guest"}`);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Sync saved sessions to localStorage whenever they change
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem(`saved_quizzes_${currentUser.id}`, JSON.stringify(savedSessions));
+    }
+  }, [savedSessions, currentUser]);
 
  
 
@@ -68,12 +90,20 @@ function App() {
 
 
 
-  // Intercept Navigation
-  const setQuizStatus = (newStatus) => {
+ // Intercept Navigation
+const setQuizStatus = (newStatus) => {
+    if (quizStatusState === "active" && newStatus !== "active" && newStatus !== "results") {
+      const confirmExit = window.confirm(
+        "You have a test in progress! Are you sure you want to leave?\n\n(Your progress is saved to this browser session, so you can resume it later by starting the test again)."
+      );
+      if (!confirmExit) return;
+    }
+
     setQuizStatusState(newStatus);
     if (newStatus === "home") navigate("/dashboard");
     else if (newStatus === "examSelection") navigate("/add-exam");
-    else if (newStatus === "dashboard") navigate("/history");
+    else if (newStatus === "dashboard") navigate("/history"); 
+    else if (newStatus === "savedSessions") navigate("/saved-sessions");
     else if (newStatus === "reviewErrors") navigate("/review");
     else if (newStatus === "admin") navigate("/admin");
     else navigate("/practice"); 
@@ -433,9 +463,21 @@ function App() {
 
       if (examFilterMode === "strict" && selectedExamName) {
         data = data.filter((q) => {
-          const sf = selectedExamName.toUpperCase();
-          return q.exam_names?.some((ex) => ex.toUpperCase().includes(sf)) || q.exam_reference?.toUpperCase().includes(sf);
+          const examQuery = selectedExamName.toUpperCase();
+          const agencyQuery = agencyName.toUpperCase();
+          
+          // Check if the exam names array or reference text contains the exam
+          const matchesExam = q.exam_names?.some((ex) => ex.toUpperCase().includes(examQuery)) || 
+                              q.exam_reference?.toUpperCase().includes(examQuery);
+                              
+          // Check if the agency matches (if the question has agency data attached)
+          const matchesAgency = q.agency_names?.some((ag) => ag.toUpperCase().includes(agencyQuery)) ||
+                                q.exam_reference?.toUpperCase().includes(agencyQuery) ||
+                                !agencyQuery; // Fallback if agency wasn't loaded
+
+          return matchesExam && matchesAgency;
         });
+      
       } else if (examFilterMode === "mixed" && selectedExamFilters.length > 0) {
         data = data.filter((q) =>
           selectedExamFilters.some((filter) => {
@@ -686,21 +728,89 @@ function App() {
     } catch { alert("Error dismissing report."); }
   };
 
+// Updated Exit Handler: Saves to persistent localStorage list when saveProgress is true
+  const handleExitQuiz = (saveProgress) => {
+    if (saveProgress) {
+      const newSavedSession = {
+        id: Date.now().toString(),
+        savedAt: new Date().toISOString(),
+        title: selectedExamName ? `${selectedExamName} (${examFilterMode})` : "General Practice Session",
+        agencyName: agencyName,
+        examMode,
+        questions,
+        currentIndex,
+        stats,
+        timeLeft,
+        userAnswers,
+        markedForReview: Array.from(markedForReview),
+        showCalculator,
+        calcInput,
+        calcResult,
+        selectedSubjects,
+        selectedChapters,
+        selectedExamName,
+      };
+
+      setSavedSessions((prev) => [newSavedSession, ...prev]);
+      alert("Test session paused and saved successfully!");
+    }
+
+    // Clear immediate active session storage
+    sessionStorage.removeItem("active_quiz");
+    sessionStorage.removeItem("quiz_status");
+    setQuestions([]);
+    setUserAnswers({});
+    setMarkedForReview(new Set());
+
+    setQuizStatusState("home");
+    navigate("/dashboard");
+  };
+
+  // Resume a saved session from the Saved Sessions page
+  const handleResumeSession = (session) => {
+    setExamMode(session.examMode || "test");
+    setQuestions(session.questions || []);
+    setCurrentIndex(session.currentIndex || 0);
+    setStats(session.stats || { correct: 0, incorrect: 0 });
+    setTimeLeft(session.timeLeft || 0);
+    setUserAnswers(session.userAnswers || {});
+    setMarkedForReview(new Set(session.markedForReview || []));
+    setShowCalculator(session.showCalculator || false);
+    setCalcInput(session.calcInput || "");
+    setCalcResult(session.calcResult || "");
+    if (session.selectedSubjects) setSelectedSubjects(session.selectedSubjects);
+    if (session.selectedChapters) setSelectedChapters(session.selectedChapters);
+    if (session.selectedExamName) setSelectedExamName(session.selectedExamName);
+
+    // Remove from saved list once resumed
+    setSavedSessions((prev) => prev.filter((s) => s.id !== session.id));
+
+    setQuizStatus("active");
+  };
+
+  // Delete a saved session
+  const handleDeleteSavedSession = (sessionId) => {
+    if (window.confirm("Are you sure you want to delete this saved test session?")) {
+      setSavedSessions((prev) => prev.filter((s) => s.id !== sessionId));
+    }
+  };
   // --- RENDER ---
 
   if (!currentUser) return <AuthScreen setCurrentUser={setCurrentUser} setQuizStatus={setQuizStatus} />;
 
   const isLowTime = sessionTimeLeft !== null && sessionTimeLeft < 300000;
 
-  return (
+      return (
     <div style={styles.page}>
-      <Navbar
-        currentUser={currentUser}
-        setQuizStatus={setQuizStatus}
-        logout={logout}
-        setFilterSubject={setFilterSubject}
-        setFilterChapter={setFilterChapter}
-      />
+      {quizStatusState !== "active" && (
+        <Navbar
+          currentUser={currentUser}
+          setQuizStatus={setQuizStatus}
+          logout={logout}
+          setFilterSubject={setFilterSubject}
+          setFilterChapter={setFilterChapter}
+        />
+      )}
 
       {sessionTimeLeft !== null && (
         <div
@@ -783,7 +893,7 @@ function App() {
               )}
               {quizStatusState === "setup" && (
                 <SetupSession
-                  examMode={examMode} examFilterMode={examFilterMode} selectedExamName={selectedExamName} agencyName={agencyName}
+                  examMode={examMode} examFilterMode={examFilterMode} setExamFilterMode={setExamFilterMode} selectedExamName={selectedExamName} agencyName={agencyName}
                   loadError={loadError} relevantSubjectIds={relevantSubjectIds} subjects={subjects} selectedSubjects={selectedSubjects}
                   toggleSubject={toggleSubject} chapters={chapters} selectedChapters={selectedChapters} toggleChapter={toggleChapter}
                   examReferences={examReferences} selectedExamFilters={selectedExamFilters} toggleExamFilter={toggleExamFilter}
@@ -799,6 +909,7 @@ function App() {
                   showCalculator={showCalculator} setShowCalculator={setShowCalculator} calcInput={calcInput} calcResult={calcResult}
                   handleCalcClick={handleCalcClick} markedForReview={markedForReview} toggleMarkForReview={toggleMarkForReview}
                   reportCurrentQuestion={reportCurrentQuestion} handleEarlySubmit={handleEarlySubmit}
+                  handleExitQuiz={handleExitQuiz}
                 />
               )}
               {quizStatusState === "results" && (
@@ -807,10 +918,26 @@ function App() {
                   marksNegative={marksNegative} questions={questions} userAnswers={userAnswers}
                 />
               )}
+
+              {/* --- SAFETY FALLBACK PREVENTS BLANK SCREEN --- */}
+              {!["modeSelection", "setup", "active", "results"].includes(quizStatusState) && (
+                <Navigate to="/dashboard" replace />
+              )}
             </>
           } />
           
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          {/* PAUSED & SAVED TESTS PAGE */}
+          <Route
+            path="/saved-sessions"
+            element={
+              <SavedSessions
+                savedSessions={savedSessions}
+                handleResumeSession={handleResumeSession}
+                handleDeleteSavedSession={handleDeleteSavedSession}
+              />
+            }
+          />
         </Routes>
       </div>
     </div>

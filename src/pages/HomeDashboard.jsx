@@ -1,5 +1,3 @@
-// src/pages/HomeDashboard.jsx
-import React from "react";
 import { theme, styles } from "../theme";
 
 export default function HomeDashboard({
@@ -19,7 +17,7 @@ export default function HomeDashboard({
         margin: "40px auto 0",
       }}
     >
-      {/* HEADER WITH HISTORY BUTTON */}
+{/* HEADER WITH HISTORY & SAVED SESSIONS BUTTONS */}
       <div 
         style={{ 
           display: "flex", 
@@ -31,24 +29,43 @@ export default function HomeDashboard({
         }}
       >
         <h1 style={{ fontSize: "28px", margin: 0 }}>My Dashboard</h1>
-        <button
-          onClick={() => setQuizStatus("dashboard")}
-          style={{
-            ...styles.button,
-            ...styles.btnSuccess, // Using green to make it pop
-            width: "auto",
-            padding: "10px 20px",
-            fontSize: "14px",
-            boxShadow: theme.shadow
-          }}
-        >
-          📊 View Test History
-        </button>
-      </div>
+        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+          {/* NEW SAVED TESTS BUTTON */}
+          <button
+            onClick={() => setQuizStatus("savedSessions")}
+            style={{
+              ...styles.button,
+              backgroundColor: "#EEF2FF",
+              color: theme.primary,
+              border: `1px solid ${theme.primary}`,
+              width: "auto",
+              padding: "10px 16px",
+              fontSize: "14px",
+              boxShadow: theme.shadow,
+            }}
+          >
+            ⏸️ Saved Tests
+          </button>
 
+          <button
+            onClick={() => setQuizStatus("dashboard")}
+            style={{
+              ...styles.button,
+              ...styles.btnSuccess,
+              width: "auto",
+              padding: "10px 16px",
+              fontSize: "14px",
+              boxShadow: theme.shadow,
+            }}
+          >
+            📊 View Test History
+          </button>
+        </div>
+      </div>
       <p style={{ color: theme.textMuted, marginBottom: "30px", textAlign: "left" }}>
         Select an exam track to begin your practice session.
       </p>
+      
 
       {/* EXAM LISTING */}
       {optedExams.length === 0 ? (

@@ -1,8 +1,10 @@
+import React from "react";
 import { theme, styles } from "../theme";
 
 export default function SetupSession({
   examMode,
   examFilterMode,
+  setExamFilterMode,
   selectedExamName,
   agencyName,
   loadError,
@@ -29,12 +31,13 @@ export default function SetupSession({
 }) {
   return (
     <div style={{ ...styles.card, maxWidth: "600px", margin: "0 auto" }}>
+      {/* Header */}
       <div
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          marginBottom: "24px",
+          marginBottom: "20px",
         }}
       >
         <h2 style={{ margin: 0, fontSize: "20px" }}>Configure Session</h2>
@@ -62,23 +65,90 @@ export default function SetupSession({
         </span>
       </div>
 
+      {/* --- Exam Scope Selector (Strict vs Custom/All) --- */}
+      <div style={{ marginBottom: "20px" }}>
+        <label
+          style={{
+            display: "block",
+            fontWeight: "600",
+            marginBottom: "8px",
+          }}
+        >
+          Question Scope
+        </label>
+        <div
+          style={{
+            display: "flex",
+            backgroundColor: "#F3F4F6",
+            padding: "4px",
+            borderRadius: "8px",
+            border: "1px solid " + theme.border,
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setExamFilterMode && setExamFilterMode("strict")}
+            style={{
+              flex: 1,
+              padding: "8px 12px",
+              borderRadius: "6px",
+              fontSize: "13px",
+              fontWeight: "600",
+              cursor: "pointer",
+              border: "none",
+              transition: "all 0.2s ease",
+              backgroundColor:
+                examFilterMode === "strict" ? theme.primary : "transparent",
+              color: examFilterMode === "strict" ? "#FFFFFF" : theme.textMuted,
+              boxShadow:
+                examFilterMode === "strict"
+                  ? "0 1px 3px rgba(0,0,0,0.1)"
+                  : "none",
+            }}
+          >
+            Strict ({agencyName ? `${agencyName} ` : ""}{selectedExamName || "Target Exam"})
+          </button>
+          <button
+            type="button"
+            onClick={() => setExamFilterMode && setExamFilterMode("mixed")}
+            style={{
+              flex: 1,
+              padding: "8px 12px",
+              borderRadius: "6px",
+              fontSize: "13px",
+              fontWeight: "600",
+              cursor: "pointer",
+              border: "none",
+              transition: "all 0.2s ease",
+              backgroundColor:
+                examFilterMode === "mixed" ? theme.primary : "transparent",
+              color: examFilterMode === "mixed" ? "#FFFFFF" : theme.textMuted,
+              boxShadow:
+                examFilterMode === "mixed"
+                  ? "0 1px 3px rgba(0,0,0,0.1)"
+                  : "none",
+            }}
+          >
+            All Exams / Custom PYQs
+          </button>
+        </div>
+      </div>
+
+      {/* Active Filter Banner for Strict Mode */}
       {examFilterMode === "strict" && selectedExamName && (
         <div
           style={{
-            padding: "10px",
+            padding: "10px 14px",
             backgroundColor: "#EFF6FF",
             borderLeft: "4px solid " + theme.primary,
             borderRadius: "4px",
             marginBottom: "20px",
-            fontSize: "14px",
+            fontSize: "13px",
             color: theme.primary,
+            lineHeight: "1.4",
           }}
         >
-          <strong>Active Filter:</strong> Only pulling questions tagged for{" "}
-          <b>
-            {agencyName} {selectedExamName}
-          </b>
-          .
+          <strong>🔒 Strict Mode Enforced:</strong> Questions are strictly matched against both agency (<b>{agencyName || "Target Agency"}</b>) and exam (<b>{selectedExamName}</b>).
         </div>
       )}
 
@@ -97,6 +167,7 @@ export default function SetupSession({
         </div>
       )}
 
+      {/* Subject Selection */}
       <label
         style={{
           display: "block",
@@ -119,11 +190,12 @@ export default function SetupSession({
         }}
       >
         {(() => {
-          const displayedSubjects = relevantSubjectIds
-            ? subjects.filter((sub) =>
-                relevantSubjectIds.includes(sub.id.toString())
-              )
-            : subjects;
+          const displayedSubjects =
+            examFilterMode === "strict" && relevantSubjectIds
+              ? subjects.filter((sub) =>
+                  relevantSubjectIds.includes(sub.id.toString())
+                )
+              : subjects;
 
           if (subjects.length === 0) {
             return (
@@ -143,6 +215,7 @@ export default function SetupSession({
 
           return displayedSubjects.map((sub) => (
             <button
+              type="button"
               key={sub.id}
               onClick={() => toggleSubject(sub.id.toString())}
               style={{
@@ -170,6 +243,7 @@ export default function SetupSession({
         })()}
       </div>
 
+      {/* Chapter Selection */}
       {selectedSubjects.length > 0 && (
         <>
           <label
@@ -208,6 +282,7 @@ export default function SetupSession({
               .filter((c) => selectedSubjects.includes(c.subject_id.toString()))
               .map((chap) => (
                 <button
+                  type="button"
                   key={chap.id}
                   onClick={() => toggleChapter(chap.id.toString())}
                   style={{
@@ -238,6 +313,7 @@ export default function SetupSession({
         </>
       )}
 
+      {/* Exam Tags (Only visible when opting out of Strict Mode) */}
       {examFilterMode === "mixed" && (
         <>
           <label
@@ -255,7 +331,7 @@ export default function SetupSession({
                 color: theme.textMuted,
               }}
             >
-              (Pick multiple, or leave blank for all)
+              (Pick multiple, or leave blank for all PYQs)
             </span>
           </label>
           <div
@@ -272,6 +348,7 @@ export default function SetupSession({
           >
             {examReferences.map((ref, idx) => (
               <button
+                type="button"
                 key={idx}
                 onClick={() => toggleExamFilter(ref)}
                 style={{
@@ -310,6 +387,7 @@ export default function SetupSession({
         </>
       )}
 
+      {/* Additional Filters */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: "15px" }}>
         <div style={{ flex: "1 1 200px" }}>
           <label
@@ -352,6 +430,7 @@ export default function SetupSession({
         </div>
       </div>
 
+      {/* Test Mode Marking Scheme */}
       {examMode === "test" && (
         <div
           style={{
@@ -417,7 +496,9 @@ export default function SetupSession({
         </div>
       )}
 
+      {/* Submit Button */}
       <button
+        type="button"
         onClick={startQuiz}
         disabled={isLoading}
         style={{
